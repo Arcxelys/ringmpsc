@@ -99,6 +99,9 @@ zig build -Doptimize=ReleaseFast
 # Run benchmark with CPU isolation (recommended)
 sudo taskset -c 0-15 nice -n -20 zig-out/bin/bench
 
+# Note: Keep SMT (hyperthreading) ENABLED. The 8P8C config needs 16 threads.
+# Producer-consumer pairs benefit from sharing L1/L2 cache on SMT siblings.
+
 # Run unit tests
 zig build test
 ```
