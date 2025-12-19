@@ -15,7 +15,7 @@ RingMPSC takes a different approach: rather than having producers contend for a 
 1. A ring-decomposed MPSC architecture eliminating producer contention
 2. Cache-optimized memory layout with 128-byte alignment for prefetcher isolation
 3. A batch consumption API amortizing atomic operation overhead
-4. Empirical evaluation demonstrating 57 billion msg/s on AMD Ryzen 7 5700
+4. Empirical evaluation demonstrating 54 billion msg/s on AMD Ryzen 7 5700
 
 ## 2. Background
 
