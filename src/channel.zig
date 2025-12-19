@@ -286,6 +286,41 @@ pub fn Ring(comptime T: type, comptime config: Config) type {
             return count;
         }
 
+        /// Consume up to max_items items with a single head update.
+        /// Useful for real-world processing where large batches may block too long.
+        pub fn consumeUpTo(self: *Self, max_items: usize, handler: anytype) usize {
+            if (max_items == 0) return 0;
+
+            const head = self.head.load(.monotonic);
+            const tail = self.tail.load(.acquire);
+
+            const avail = tail -% head;
+            if (avail == 0) return 0;
+
+            const to_consume = @min(avail, max_items);
+
+            var pos = head;
+            var count: usize = 0;
+
+            // Process up to max_items
+            while (count < to_consume) {
+                const idx = pos & MASK;
+                handler.process(&self.buffer[idx]);
+                pos +%= 1;
+                count += 1;
+            }
+
+            // Single atomic update for the batch
+            self.head.store(head +% count, .release);
+
+            if (config.enable_metrics) {
+                _ = @atomicRmw(u64, &self.metrics.messages_received, .Add, count, .monotonic);
+                _ = @atomicRmw(u64, &self.metrics.batches_received, .Add, 1, .monotonic);
+            }
+
+            return count;
+        }
+
         /// Consume batch with callback function
         pub fn consumeBatchFn(self: *Self, comptime callback: fn (*const T) void) usize {
             const Handler = struct {
@@ -401,8 +436,21 @@ pub fn Channel(comptime T: type, comptime config: Config) type {
         pub fn consumeAll(self: *Self, handler: anytype) usize {
             var total: usize = 0;
             const count = self.producer_count.load(.acquire);
-            for (self.rings[0..count]) |*ring| {
-                total += ring.consumeBatch(handler);
+            for (0..count) |i| {
+                total += self.rings[i].consumeBatch(handler);
+            }
+            return total;
+        }
+
+        /// Consume up to max_total items from all producers, preferring earlier rings.
+        /// Useful for real-world processing to limit batch size and avoid long pauses.
+        pub fn consumeAllUpTo(self: *Self, max_total: usize, handler: anytype) usize {
+            var total: usize = 0;
+            const count = self.producer_count.load(.acquire);
+            for (0..count) |i| {
+                if (total >= max_total) break;
+                const remaining = max_total - total;
+                total += self.rings[i].consumeUpTo(remaining, handler);
             }
             return total;
         }
@@ -493,6 +541,38 @@ test "ring: batch consumption" {
     try std.testing.expect(ring.isEmpty());
 }
 
+test "ring: consume up to limit" {
+    var ring = Ring(u64, default_config){};
+
+    // Write 10 items
+    for (0..10) |i| {
+        const w = ring.reserve(1).?;
+        w.slice[0] = @intCast(i * 10);
+        ring.commit(1);
+    }
+
+    // Consume up to 5
+    var sum: u64 = 0;
+    const Handler = struct {
+        sum: *u64,
+        pub fn process(self: @This(), item: *const u64) void {
+            self.sum.* += item.*;
+        }
+    };
+    const consumed = ring.consumeUpTo(5, Handler{ .sum = &sum });
+
+    try std.testing.expectEqual(@as(usize, 5), consumed);
+    try std.testing.expectEqual(@as(u64, 0 + 10 + 20 + 30 + 40), sum);
+    try std.testing.expectEqual(@as(usize, 5), ring.len()); // 5 left
+
+    // Consume remaining
+    sum = 0;
+    const consumed2 = ring.consumeUpTo(10, Handler{ .sum = &sum });
+    try std.testing.expectEqual(@as(usize, 5), consumed2);
+    try std.testing.expectEqual(@as(u64, 50 + 60 + 70 + 80 + 90), sum);
+    try std.testing.expect(ring.isEmpty());
+}
+
 test "ring: backoff on full" {
     var ring = Ring(u64, Config{ .ring_bits = 4 }){}; // 16 slots
 
@@ -544,6 +624,29 @@ test "channel: consumeAll batch" {
 
     try std.testing.expectEqual(@as(usize, 6), consumed);
     try std.testing.expectEqual(@as(u64, 21), sum);
+}
+
+test "channel: consumeAll up to limit" {
+    var ch = Channel(u64, default_config).init();
+
+    const p1 = try ch.register();
+    const p2 = try ch.register();
+
+    _ = p1.send(&[_]u64{ 1, 2, 3 });
+    _ = p2.send(&[_]u64{ 4, 5, 6 });
+
+    var sum: u64 = 0;
+    const Handler = struct {
+        sum: *u64,
+        pub fn process(self: @This(), item: *const u64) void {
+            self.sum.* += item.*;
+        }
+    };
+    const consumed = ch.consumeAllUpTo(4, Handler{ .sum = &sum });
+
+    try std.testing.expectEqual(@as(usize, 4), consumed);
+    // Depending on order, but since p1 first, 1+2+3+4=10
+    try std.testing.expect(sum >= 10);
 }
 
 test "backoff: spin progression" {

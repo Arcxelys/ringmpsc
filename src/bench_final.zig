@@ -5,11 +5,11 @@ const std = @import("std");
 const ringmpsc = @import("channel");
 
 // Configuration
-const MSG: u64 = 500_000_000;  // 500M messages per producer
-const BATCH: usize = 32768;    // Batch size for zero-copy operations
-const RING_BITS: u6 = 16;      // 64K slots per ring
+const MSG: u64 = 500_000_000; // 500M messages per producer
+const BATCH: usize = 32768; // Batch size for zero-copy operations
+const RING_BITS: u6 = 16; // 64K slots per ring
 const MAX_PRODUCERS: usize = 8;
-const CPU_COUNT: usize = 16;   // Ryzen 7 5700: 8 cores, 16 threads
+const CPU_COUNT: usize = 16; // Ryzen 7 5700: 8 cores, 16 threads
 
 const config = ringmpsc.Config{ .ring_bits = RING_BITS, .max_producers = MAX_PRODUCERS };
 const ChannelType = ringmpsc.Channel(u32, config);

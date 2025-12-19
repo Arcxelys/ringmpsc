@@ -251,6 +251,38 @@ These properties are verified by the included test suite:
 3. **No global ordering**: Only per-producer FIFO, not total order
 4. **Fixed producer count**: Maximum producers set at compile time
 
+## 8. Overcoming Limitations for Real-World Use
+
+The benchmark's idealized no-op consumer and large batches (32K) achieve high throughput but may not suit real-world data processing where handlers perform work. To address this:
+
+- Use `consumeAllUpTo(max_items, handler)` instead of `consumeAll(handler)` to limit batch sizes and prevent long processing pauses.
+- For low-latency needs, implement custom polling with smaller limits per ring.
+- Global ordering can be added by embedding timestamps in messages and sorting during consumption (at cost of throughput).
+
+### Additional Recommendations
+
+#### For Fairness Under Unbalanced Loads
+The current round-robin polling can starve rings with fewer items if some producers are slower. Consider:
+
+- **Priority Queue for Ring Selection**: Maintain a priority queue of rings ordered by available items. Consume from the ring with the most pending messages first.
+- **Weighted Round-Robin**: Assign weights based on producer activity or use a fair queuing algorithm.
+
+#### For Global Ordering
+RingMPSC guarantees only per-producer FIFO. For total order across producers:
+
+- **Add Sequence Numbers**: Embed a global atomic sequence number in each message. Increment atomically on send.
+- **Timestamps**: Use high-resolution timestamps (e.g., TSC) for ordering, with sorting at consumption.
+
+Trade-off: Both approaches reduce throughput due to atomic operations or sorting overhead.
+
+#### For Dynamic Producers
+The fixed compile-time producer limit simplifies the implementation but restricts flexibility:
+
+- **Runtime Allocation**: Use a dynamic array of rings with atomic resize operations.
+- **Linked List**: Maintain a linked list of active rings for unbounded producers.
+
+Trade-off: Increases complexity, potential contention on the list, and memory management overhead.
+
 ## 8. Related Work
 
 - **LMAX Disruptor** [Thompson et al., 2011]: Pioneered batch consumption and mechanical sympathy

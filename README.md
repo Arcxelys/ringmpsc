@@ -85,6 +85,9 @@ const Handler = struct {
     }
 };
 _ = channel.consumeAll(Handler{ .sum = &sum });
+
+// Receive (limited batch for real-world processing)
+_ = channel.consumeAllUpTo(1000, Handler{ .sum = &sum });
 ```
 
 ## Build & Verify
