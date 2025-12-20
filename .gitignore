@@ -1,2 +1,4 @@
 .zig-cache/
 zig-out/
+rust_impl/target/
+rust_impl/Cargo.lock

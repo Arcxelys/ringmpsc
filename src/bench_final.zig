@@ -5,8 +5,8 @@ const std = @import("std");
 const ringmpsc = @import("channel");
 
 // Configuration
-const MSG: u64 = 500_000_000; // 500M messages per producer
-const BATCH: usize = 32768; // Batch size for zero-copy operations
+const MSG: u64 = 100_000_000; // 100M messages per producer
+const BATCH: usize = 1; // Unbuffered (batch size 1)
 const RING_BITS: u6 = 16; // 64K slots per ring
 const MAX_PRODUCERS: usize = 8;
 const CPU_COUNT: usize = 16; // Ryzen 7 5700: 8 cores, 16 threads
@@ -38,7 +38,7 @@ pub fn main() !void {
     const counts = [_]usize{ 1, 2, 4, 6, 8 };
     for (counts) |p| {
         const r = try runTest(p);
-        const status = if (r.rate >= 50.0) "✓ PASS" else if (r.rate >= 30.0) "○ OK  " else "✗ LOW ";
+        const status = if (r.rate >= 1.0) "✓ PASS" else if (r.rate >= 0.5) "○ OK  " else "✗ LOW ";
         std.debug.print("│ {d}P{d}C        │ {d:>8.2} B/s  │ {s} │\n", .{ p, p, r.rate, status });
     }
 
@@ -57,7 +57,7 @@ fn runTest(num_producers: usize) !struct { rate: f64 } {
 
     for (0..num_producers) |i| producers[i] = channel.register() catch unreachable;
 
-    const t0 = std.time.nanoTimestamp();
+    const t0 = std.time.Instant.now() catch unreachable;
 
     // Start consumer threads (pin to CPUs after producers)
     for (0..num_producers) |i| {
@@ -78,7 +78,7 @@ fn runTest(num_producers: usize) !struct { rate: f64 } {
     // Wait for consumers
     for (0..num_producers) |i| consumer_threads[i].join();
 
-    const ns = @as(u64, @intCast(std.time.nanoTimestamp() - t0));
+    const ns = (std.time.Instant.now() catch unreachable).since(t0);
 
     var count_c: u64 = 0;
     for (0..num_producers) |i| count_c += counts_c[i].load(.acquire);
