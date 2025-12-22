@@ -26,7 +26,7 @@ pub fn main() !void {
     var total: u64 = 0;
     var buf: [256]u64 = undefined;
 
-    const t0 = std.time.nanoTimestamp();
+    const t0 = std.time.Instant.now() catch unreachable;
     while (total < TOTAL) {
         const n = channel.recv(&buf);
         for (buf[0..n]) |msg| {
@@ -43,7 +43,7 @@ pub fn main() !void {
         }
         if (n == 0) std.atomic.spinLoopHint();
     }
-    const ns: u64 = @intCast(std.time.nanoTimestamp() - t0);
+    const ns: u64 = (std.time.Instant.now() catch unreachable).since(t0);
 
     for (&threads) |*t| t.join();
 
