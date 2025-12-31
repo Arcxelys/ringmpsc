@@ -1,28 +1,27 @@
 # RingMPSC - Rust Implementation
 
-A high-performance lock-free MPSC (Multi-Producer Single-Consumer) ring buffer implementation in Rust, matching the performance of the Zig reference implementation.
+Rust port of the RingMPSC lock-free MPSC channel. Same algorithm as the Zig implementation.
 
 ## Performance
 
 Benchmarked on AMD Ryzen 7 PRO 8840U (Zen 4):
 
-| Config | Zig | Rust | vs Zig |
-|--------|-----|------|--------|
-| 1P1C | ~0.49 B/s | ~0.55 B/s | **+12%** |
-| 2P2C | ~0.44 B/s | ~0.78 B/s | **+77%** |
-| 4P4C | ~0.80 B/s | ~1.35 B/s | **+69%** |
-| 6P6C | ~1.04 B/s | ~1.50 B/s | **+44%** |
-| 8P8C | ~1.02 B/s | ~1.38 B/s | **+35%** |
+| Config | Zig | Rust | Diff |
+|--------|-----|------|------|
+| 1P1C | ~0.49 B/s | ~0.55 B/s | +12% |
+| 2P2C | ~0.44 B/s | ~0.78 B/s | +77% |
+| 4P4C | ~0.80 B/s | ~1.35 B/s | +69% |
+| 6P6C | ~1.04 B/s | ~1.50 B/s | +44% |
+| 8P8C | ~1.02 B/s | ~1.38 B/s | +35% |
 
-*B/s = billion messages per second*
+*B/s = billion messages per second. Results vary by hardware.*
 
-## Key Features
+## Features
 
-- **Stack-allocated ring buffer** - Zero heap indirection, buffer embedded in struct
+- **Stack-allocated ring buffer** - Buffer embedded in struct, zero heap indirection
 - **Batch consumption API** - Single atomic update for N items
-- **Smart CPU pinning** - Enabled only for 1P1C (A/B tested)
-- **No software prefetch** - Hardware prefetcher handles sequential access better on AMD Zen 4
-- **Zero-cost abstractions** - Matches C/Zig performance
+- **Conditional CPU pinning** - Enabled only for 1P1C based on A/B testing
+- **No software prefetch** - Hardware prefetcher handles sequential access on Zen 4
 
 ## Architecture
 
@@ -63,7 +62,7 @@ A/B testing revealed that software prefetch **hurts** performance on AMD Zen 4:
 
 Modern AMD cores have excellent hardware prefetchers for sequential access patterns.
 
-### Why Smart Pinning?
+### Conditional CPU Pinning
 
 A/B testing showed pinning is situational:
 - 1P1C with pinning: +30% improvement

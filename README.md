@@ -114,14 +114,17 @@ zig build test
 ```
 ringmpsc/
 ├── README.md           # This file
+├── ALGORITHM.md        # Detailed algorithm description
 ├── build.zig           # Build configuration
 ├── verify.sh           # One-click verification script
-└── src/
-    ├── channel.zig     # Core implementation
-    ├── bench_final.zig # Throughput benchmark
-    ├── test_fifo.zig   # FIFO ordering verification
-    ├── test_chaos.zig  # Race condition detection
-    └── test_determinism.zig # Deterministic execution test
+├── src/
+│   ├── channel.zig     # Core implementation
+│   ├── bench_final.zig # Throughput benchmark
+│   ├── test_fifo.zig   # FIFO ordering verification
+│   ├── test_chaos.zig  # Race condition detection
+│   └── test_determinism.zig # Deterministic execution test
+├── rust_impl/          # Rust implementation
+└── c_impl/             # C implementation (header-only)
 ```
 
 ## Correctness Properties

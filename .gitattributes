@@ -1,0 +1,5 @@
+# Override GitHub language detection - this is primarily a Zig project
+# The rust_impl/ and c_impl/ folders are for language bindings/benchmarking
+
+rust_impl/** linguist-vendored
+c_impl/** linguist-vendored
